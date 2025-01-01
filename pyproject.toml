@@ -1,7 +1,7 @@
 [project]
 name = "unitycatalog-pydantic"
 version = "0.1.0"
-description = "Support for Unity Catalog functions in Pydantic"
+description = "Manage Unity Catalog tables with Pydantic models"
 authors = [{name="Daniël Tom", email="detom89@gmail.com"}]
 readme = "README.md"
 requires-python = ">=3.9"

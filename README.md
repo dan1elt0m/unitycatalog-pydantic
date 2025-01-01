@@ -9,6 +9,11 @@
 
 Simplifies managing OSS Unity Catalog tables using Pydantic models.
 
+## Installation
+```bash
+pip install unitycatalog-pydantic
+```
+
 ## Examples 
 
 ### Create Table
