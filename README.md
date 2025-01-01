@@ -1,8 +1,8 @@
 # Unity Catalog Pydantic 
 [![CodeQL](https://github.com/dan1elt0m/unitycatalog-pydantic/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/dan1elt0m/sadel/actions/workflows/codeql-analysis.yml)
 [![test](https://github.com/dan1elt0m/unitycatalog-pydantic/actions/workflows/test.yml/badge.svg)](https://github.com/dan1elt0m/sadel/actions/workflows/test.yml)
-[![codecov](https://codecov.io/github/dan1elt0m/dan1elt0m/graph/badge.svg?token=NECZRE656C)](https://codecov.io/github/dan1elt0m/sadel)
 ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fdan1elt0m%2Funitycatalog-pydantic%2Fmain%2Fpyproject.toml)
+[![codecov](https://codecov.io/github/dan1elt0m/dan1elt0m/graph/badge.svg?token=NECZRE656C)](https://codecov.io/github/dan1elt0m/unitycatalog-pydantic)
 
 
 **Disclaimer: This project is unofficial and not affiliated with or endorsed by the official Unity Catalog team.**
