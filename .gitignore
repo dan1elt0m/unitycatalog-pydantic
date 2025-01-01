@@ -15,3 +15,7 @@ spark-warehouse
 
 # PyCharm
 .idea/
+
+# coverage
+.coverage
+coverage
