@@ -7,10 +7,11 @@ from typing import List, Dict, Optional, Type, Tuple, Union, Any
 
 import pytest
 from polyfactory.factories.pydantic_factory import ModelFactory
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, AliasChoices
 from unitycatalog.client import ColumnInfo, ColumnTypeName, TablesApi, DataSourceFormat
 from unitycatalog_pydantic import UCModel, create_table
-from unitycatalog_pydantic.map import get_column_info_list, pydantic_type_to_sql_type, pydantic_type_to_uc_type_json
+from unitycatalog_pydantic.map import get_column_info_list, py_type_to_sql_type, pydantic_type_to_uc_type_json, \
+    _get_field_alias
 
 
 def factory(model):
@@ -566,27 +567,27 @@ class ModelWithUnknownType(BaseModel):
 
 def test_pydantic_type_to_sql_type_any():
     with pytest.raises(ValueError, match="Unsupported Pydantic type: typing.Any is not allowed. Please specify a concrete type."):
-        pydantic_type_to_sql_type(ModelWithAny.__annotations__['any_field'])
+        py_type_to_sql_type(ModelWithAny.__annotations__['any_field'])
 
 def test_pydantic_type_to_sql_type_empty_dict():
     with pytest.raises(ValueError, match="Unsupported Pydantic type: typing.Dict requires key and value types."):
-        pydantic_type_to_sql_type(ModelWithEmptyDict.__annotations__['empty_dict_field'])
+        py_type_to_sql_type(ModelWithEmptyDict.__annotations__['empty_dict_field'])
 
 def test_pydantic_type_to_sql_type_empty_list():
     with pytest.raises(ValueError, match="Unsupported Pydantic type: typing.List or typing.Tuple requires an element type."):
-        pydantic_type_to_sql_type(ModelWithEmptyList.__annotations__['empty_list_field'])
+        py_type_to_sql_type(ModelWithEmptyList.__annotations__['empty_list_field'])
 
 def test_pydantic_type_to_sql_type_non_string_key_dict():
     with pytest.raises(TypeError, match="Only support STRING key type"):
-        pydantic_type_to_sql_type(ModelWithNonStringKeyDict.__annotations__['non_string_key_dict'])
+        py_type_to_sql_type(ModelWithNonStringKeyDict.__annotations__['non_string_key_dict'])
 
 def test_pydantic_type_to_sql_type_union_none():
-    sql_type = pydantic_type_to_sql_type(ModelWithUnionNone.__annotations__['union_none_field'])
+    sql_type = py_type_to_sql_type(ModelWithUnionNone.__annotations__['union_none_field'])
     assert sql_type == "LONG"  # Assuming the function maps Union[None, int] to LONG
 
 def test_pydantic_type_to_sql_type_unknown_type():
     with pytest.raises(ValueError, match="Unsupported Pydantic type: UnknownType"):
-        pydantic_type_to_sql_type(ModelWithUnknownType.__annotations__['unknown_field'])
+        py_type_to_sql_type(ModelWithUnknownType.__annotations__['unknown_field'])
 
 def test_pydantic_type_to_json_type_union_none():
     json_type = pydantic_type_to_uc_type_json(ModelWithUnionNone.__annotations__['union_none_field'])
@@ -606,8 +607,21 @@ def test_pydantic_type_to_json_non_string_key_dict():
 
 def test_python_type_to_sql_type_any():
     with pytest.raises(ValueError, match="Unsupported Pydantic type: typing.Any is not allowed. Please specify a concrete type."):
-        pydantic_type_to_sql_type(Any)
+        py_type_to_sql_type(Any)
 
 def test_python_type_to_sql_type_empty_dict():
     with pytest.raises(ValueError, match="Unsupported Pydantic type: typing.Dict requires key and value types."):
-        pydantic_type_to_sql_type(Dict)
+        py_type_to_sql_type(Dict)
+
+def test_get_field_alias_with_alias_choices():
+    class AliasChoicesModel(BaseModel):
+        col: str = Field(alias=AliasChoices("alias1", "alias2"))
+
+    alias = _get_field_alias('col', AliasChoicesModel.model_fields['col'], mode='validation')
+    assert alias == 'alias1'
+
+    alias = _get_field_alias('col', AliasChoicesModel.model_fields['col'], mode='serialization')
+    assert alias == AliasChoices("alias1", "alias2")
+
+    alias = _get_field_alias('col', AliasChoicesModel.model_fields['col'], mode='unknown_mode')
+    assert alias == 'col'

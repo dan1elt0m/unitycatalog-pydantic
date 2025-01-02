@@ -11,61 +11,8 @@ from unitycatalog.ai.core.utils.type_utils import PYTHON_TO_SQL_TYPE_MAPPING, UC
 from unitycatalog.client import ColumnInfo
 
 
-def python_type_to_sql_type(py_type: Any) -> str:
-    """
-    Convert a Python type to its SQL equivalent. Handles nested types (e.g., List[Dict[str, int]])
-    by recursively mapping the inner types using PYTHON_TO_SQL_TYPE_MAPPING.
 
-    Args:
-        py_type: The Python type to be converted (e.g., List[int], Dict[str, List[int]]).
-
-    Returns:
-        str: The corresponding SQL type (e.g., ARRAY<MAP<STRING, LONG>>).
-
-    Raises:
-        ValueError: If the type cannot be mapped to a SQL type.
-    """
-    if py_type is Any:
-        raise ValueError(
-            "Unsupported Python type: typing.Any is not allowed. Please specify a concrete type."
-        )
-    elif inspect.isclass(py_type) and issubclass(py_type, BaseModel):
-        fields = []
-        for field_name, field_type in py_type.__annotations__.items():
-            field_sql_type = python_type_to_sql_type(field_type)
-            fields.append(f"{field_name}:{field_sql_type}")
-        return f"STRUCT<{', '.join(fields)}>"
-
-    origin = get_origin(py_type)
-
-    if origin is dict:
-        if not get_args(py_type):
-            raise ValueError(f"Unsupported Python type: typing.Dict requires key and value types.")
-
-        key_type, value_type = get_args(py_type)
-        key_sql_type = python_type_to_sql_type(key_type)
-        value_sql_type = python_type_to_sql_type(value_type)
-        return f"MAP<{key_sql_type}, {value_sql_type}>"
-
-    elif origin in (list, tuple):
-        if not get_args(py_type):
-            raise ValueError(
-                f"Unsupported Python type: typing.List or typing.Tuple requires an element type."
-            )
-
-        (element_type,) = get_args(py_type)
-        element_sql_type = python_type_to_sql_type(element_type)
-        return f"ARRAY<{element_sql_type}>"
-
-
-
-    if sql_type := PYTHON_TO_SQL_TYPE_MAPPING.get(py_type):
-        return sql_type
-
-    raise ValueError(f"Unsupported Python type: {py_type}")
-
-
-def pydantic_type_to_sql_type(
+def py_type_to_sql_type(
     py_type: Any, use_alias: bool = True, json_schema_mode: str = "validation"
 ) -> str:
     """
@@ -101,8 +48,8 @@ def pydantic_type_to_sql_type(
             raise TypeError(
                 f"Only support STRING key type for MAP but got {key_type}."
             )
-        key_sql_type = pydantic_type_to_sql_type(key_type, use_alias, json_schema_mode)
-        value_sql_type = pydantic_type_to_sql_type(
+        key_sql_type = py_type_to_sql_type(key_type, use_alias, json_schema_mode)
+        value_sql_type = py_type_to_sql_type(
             value_type, use_alias, json_schema_mode
         )
         return f"MAP<{key_sql_type}, {value_sql_type}>"
@@ -114,7 +61,7 @@ def pydantic_type_to_sql_type(
             )
 
         (element_type,) = get_args(py_type)
-        element_sql_type = pydantic_type_to_sql_type(
+        element_sql_type = py_type_to_sql_type(
             element_type, use_alias, json_schema_mode
         )
         return f"ARRAY<{element_sql_type}>"
@@ -123,7 +70,7 @@ def pydantic_type_to_sql_type(
         if len(args) == 2 and type(None) in args:
             # this is an optional column. Just return the non-optional type
             arg = args[0] if args[0] != type(None) else args[1]
-            return pydantic_type_to_sql_type(arg, use_alias, json_schema_mode)
+            return py_type_to_sql_type(arg, use_alias, json_schema_mode)
         elif len(args) == 2:
             # always cast to string for now
             return "STRING"
@@ -135,7 +82,7 @@ def pydantic_type_to_sql_type(
                 field_name = _get_field_alias(
                     field_name, py_type.model_fields[field_name], json_schema_mode
                 )
-            field_sql_type = pydantic_type_to_sql_type(
+            field_sql_type = py_type_to_sql_type(
                 field_type, use_alias, json_schema_mode
             )
             fields.append(f"{field_name}:{field_sql_type}")
@@ -304,11 +251,11 @@ def get_column_info_list(
     for index, (field_name, field_info) in enumerate(columns.model_fields.items()):
         if by_alias:
             field_name = _get_field_alias(field_name, field_info, json_schema_mode)
-        nullable, python_type = _is_nullable(field_info.annotation)
+        nullable, py_type = _is_nullable(field_info.annotation)
 
-        origin = get_origin(python_type)
+        origin = get_origin(py_type)
         if not origin:
-            origin = python_type
+            origin = py_type
 
         if issubclass(origin, BaseModel):
             type_json = pydantic_type_to_uc_type_json(
@@ -317,7 +264,7 @@ def get_column_info_list(
                 use_alias=by_alias,
                 json_schema_mode=json_schema_mode,
             )
-            type_text = pydantic_type_to_sql_type(origin)
+            type_text = py_type_to_sql_type(origin, use_alias=by_alias, json_schema_mode=json_schema_mode)
             type_name = "STRUCT"
         else:
             type_name = PYTHON_TO_SQL_TYPE_MAPPING.get(origin)
@@ -326,7 +273,7 @@ def get_column_info_list(
                 type_name = "DECIMAL"
             elif "INTERVAL" in type_name:
                 type_name = "INTERVAL"
-            type_text = python_type_to_sql_type(python_type)
+            type_text = py_type_to_sql_type(py_type, use_alias=by_alias, json_schema_mode=json_schema_mode)
             type_json = {"type": type_name.lower()}
 
         column_info = ColumnInfo(
