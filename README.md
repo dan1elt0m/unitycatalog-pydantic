@@ -5,7 +5,7 @@
 [![codecov](https://codecov.io/github/dan1elt0m/unitycatalog-pydantic/graph/badge.svg?token=LT2ZGURDIB)](https://codecov.io/github/dan1elt0m/unitycatalog-pydantic)
 > **Disclaimer: This project is unofficial and not affiliated with or endorsed by the official Unity Catalog team.**
 
-Simplifies managing OSS Unity Catalog tables using Pydantic models.
+Simplifies managing Unity Catalog tables using Pydantic models.
 
 ## Installation
 ```bash
