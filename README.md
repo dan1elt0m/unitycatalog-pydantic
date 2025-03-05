@@ -15,6 +15,7 @@ pip install unitycatalog-pydantic
 ## Examples 
 
 ### Create Table
+Specify the columns as class attributes. The type hints are used to generate the schema. The docstring is used as the table comment.
 
 ```python
 from unitycatalog.client import ApiClient, TablesApi
@@ -48,6 +49,7 @@ table_info = await MyTable.get(
 ```
 
 ### Delete Table
+Delete the table using the class method `delete`.
 
 ```python
 await MyTable.delete(
@@ -58,6 +60,7 @@ await MyTable.delete(
 ```
 
 ### Nested Models
+Nested models are also supported. The nested model becomes a struct in the schema.
 ```python
 from pydantic import BaseModel
 from unitycatalog.client import ApiClient, TablesApi
@@ -85,6 +88,7 @@ table_info = await MyTable.create(
 ```
 
 ### Using a BaseModel as root model
+It is also possible to use a Pydantic `BaseModel` as the root model. This is useful when you want to use Pydantic models for other purposes as well.
 ```python
 from pydantic import BaseModel
 from unitycatalog.client import ApiClient, TablesApi
@@ -135,3 +139,6 @@ Tested on Parquet, Delta, and CSV data source formats. Other formats may not wor
   integer type, because Parquet doesn't recognize integer SQL types. The same goes for other types like `DATE`, `TIMESTAMP`, etc.. This is an integration issue and not a problem with the library itself.
 - You can't use nested models for CSV data source format. This is because CSV doesn't support nested types. This is an issue with the data source format and not the library itself.
 - Latest version of DuckDB doesn't support reading some of the required fields for UC's ColumnInfo model. e.g., precision fields. This is an integration issue and not a problem with the library itself.
+
+## Contributing 
+Contributions are welcome! Please see the [contributing guidelines](CONTRIBUTING.md) for more information. 
